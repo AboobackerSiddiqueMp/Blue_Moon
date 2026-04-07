@@ -32,16 +32,28 @@ const HeroSection = () => {
       frame: 0
     }
 
+    let loadedCount = 0
+    const totalImages = frameCount
+
     for (let i = 0; i < frameCount; i++) {
         const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => {
+          loadedCount++
+          // Once all images are loaded, initialize the animation
+          if (loadedCount === totalImages) {
+            initializeAnimation()
+          }
+        }
+        img.onerror = () => {
+          loadedCount++
+          // Continue even if some images fail to load
+          if (loadedCount === totalImages) {
+            initializeAnimation()
+          }
+        }
         img.src = currentFrame(i)
         images.push(img)
-    }
-
-    images[0].onload = () => {
-      canvas.width = images[0].width || 1920
-      canvas.height = images[0].height || 1080
-      render()
     }
 
     function render() {
@@ -51,46 +63,60 @@ const HeroSection = () => {
       }
     }
 
-    // Main animation timeline
-    // This timeline will control both the image sequence and the synchronized text fades
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: container,
-        start: 'top top',
-        end: '+=400%', // Makes the pin duration 4x the viewport height
-        scrub: 0.5,
-        pin: true,
+    function initializeAnimation() {
+      // Set canvas dimensions from first loaded image
+      if (images[0]) {
+        canvas.width = images[0].width || 1920
+        canvas.height = images[0].height || 1080
+        render()
       }
-    })
 
-    // 1. Image Sequence Animation (span the entire timeline, from 0 to 1)
-    tl.to(imageSeq, {
-      frame: frameCount - 1,
-      snap: 'frame',
-      ease: 'none',
-      onUpdate: render,
-      duration: 1
-    }, 0)
+      // Main animation timeline
+      // This timeline will control both the image sequence and the synchronized text fades
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container,
+          start: 'top top',
+          end: '+=400%', // Makes the pin duration 4x the viewport height
+          scrub: 0.5,
+          pin: true,
+          refreshPriority: -1,
+        }
+      })
 
-    // 2. Texts sync
-    const durationOffset = 0.1
-    // Intro Text (Feature 1) -> 0.0 to 0.2
-    tl.fromTo(text1Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.0)
-    tl.to(text1Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.15)
-    
-    // Text 2 (Feature 2)
-    tl.fromTo(text2Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.25)
-    tl.to(text2Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.40)
+      // 1. Image Sequence Animation (span the entire timeline, from 0 to 1)
+      tl.to(imageSeq, {
+        frame: frameCount - 1,
+        snap: 'frame',
+        ease: 'none',
+        onUpdate: render,
+        duration: 1
+      }, 0)
 
-    // Text 3 (Feature 3)
-    tl.fromTo(text3Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.50)
-    tl.to(text3Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.65)
+      // 2. Texts sync
+      const durationOffset = 0.1
+      // Intro Text (Feature 1) -> 0.0 to 0.2
+      tl.fromTo(text1Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.0)
+      tl.to(text1Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.15)
+      
+      // Text 2 (Feature 2)
+      tl.fromTo(text2Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.25)
+      tl.to(text2Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.40)
 
-    // Text 4 (Feature 4 - Outro)
-    tl.fromTo(text4Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.75)
+      // Text 3 (Feature 3)
+      tl.fromTo(text3Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.50)
+      tl.to(text3Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.65)
+
+      // Text 4 (Feature 4 - Outro)
+      tl.fromTo(text4Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.75)
+    }
 
     return () => {
-      tl.kill()
+      ScrollTrigger.getAll().forEach(trigger => {
+        if (trigger.vars.trigger === container) {
+          trigger.kill()
+        }
+      })
     }
   }, [])
 
