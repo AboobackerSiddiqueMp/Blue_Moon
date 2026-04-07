@@ -8,7 +8,8 @@ const FragranceNotesSection = () => {
   
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start center", "end center"]
+    offset: ["start center", "end center"],
+    layoutEffect: false
   })
 
   // Animate the line height from 0% to 100%

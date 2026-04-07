@@ -86,7 +86,7 @@ function BottleStage({ containerRef }: { containerRef: React.RefObject<HTMLDivEl
   }, [])
 
   /* Scroll-linked glow intensity */
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] })
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'], layoutEffect: false })
   const glowOpacity = useSpring(useTransform(scrollYProgress, [0, 0.5, 1], [0.12, 0.28, 0.16]), { stiffness: 60, damping: 20 })
 
   return (
@@ -233,7 +233,7 @@ function ScrollPip({
   slideIndex: number
   total: number
 }) {
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] })
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'], layoutEffect: false })
   const segStart = slideIndex / total
   const segEnd   = (slideIndex + 1) / total
   const w = useSpring(
@@ -259,7 +259,7 @@ function SpecSlide({
   slideIndex: number
   total: number
 }) {
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] })
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'], layoutEffect: false })
 
   const segStart = slideIndex / total
   const segMid   = (slideIndex + 0.5) / total

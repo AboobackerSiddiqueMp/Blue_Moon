@@ -301,6 +301,7 @@ const ExperienceSection = () => {
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start end', 'start 30%'],
+    layoutEffect: false
   })
   const lineWidth = useSpring(useTransform(scrollYProgress, [0, 1], ['0%', '100%']), {
     stiffness: 60,
