@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import NextImage from 'next/image'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -26,29 +27,42 @@ const HeroSection = () => {
     if (!canvas || !context || !container) return
 
     // Preload images
-    const images: HTMLImageElement[] = []
+    const images: HTMLImageElement[] = new Array(frameCount)
     
     const imageSeq = {
       frame: 0
     }
 
-    for (let i = 0; i < frameCount; i++) {
-        const img = new Image()
-        img.src = currentFrame(i)
-        images.push(img)
-    }
+    const firstImg = new Image()
+    firstImg.src = currentFrame(0)
+    images[0] = firstImg
 
-    images[0].onload = () => {
-      canvas.width = images[0].width || 1920
-      canvas.height = images[0].height || 1080
-      render()
-    }
-
-    function render() {
+    const render = () => {
       if (images[imageSeq.frame] && images[imageSeq.frame].complete) {
         context?.clearRect(0, 0, canvas.width, canvas.height)
         context?.drawImage(images[imageSeq.frame], 0, 0, canvas.width, canvas.height)
       }
+    }
+
+    firstImg.onload = () => {
+      canvas.width = firstImg.width || 1920
+      canvas.height = firstImg.height || 1080
+      render()
+
+      // Defer loading the remaining 239 images to prevent network blocking for other assets
+      setTimeout(() => {
+        for (let i = 1; i < frameCount; i++) {
+            const img = new Image()
+            img.src = currentFrame(i)
+            images[i] = img
+            img.onload = () => {
+                // Render if user scrolled to this frame while it was loading
+                if (imageSeq.frame === i) {
+                    render()
+                }
+            }
+        }
+      }, 100)
     }
 
     // Main animation timeline
@@ -96,7 +110,16 @@ const HeroSection = () => {
 
   return (
     <section ref={containerRef} id="home" className="relative w-full h-screen bg-black overflow-hidden">
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" />
+        {/* Priority loaded LCP image to show immediately before canvas loads */}
+        <NextImage 
+          src={currentFrame(0)} 
+          alt="Blue Moon Background" 
+          fill 
+          priority 
+          unoptimized
+          className="object-cover z-0 opacity-80" 
+        />
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover z-0" />
         
         {/* Texts container overlayed on top of the canvas */}
         <div className="absolute inset-0 pointer-events-none z-10 w-full h-full">
