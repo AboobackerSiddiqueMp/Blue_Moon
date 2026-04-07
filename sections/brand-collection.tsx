@@ -55,6 +55,8 @@ export default function BrandCollection() {
           </p>
         </motion.div>
 
+
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 max-w-7xl mx-auto">
           {collection.map((item, index) => (
             <motion.div
