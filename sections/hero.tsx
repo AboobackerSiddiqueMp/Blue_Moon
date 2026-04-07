@@ -65,6 +65,7 @@ const HeroSection = () => {
       }, 100)
     }
 
+    
     // Main animation timeline
     // This timeline will control both the image sequence and the synchronized text fades
     const tl = gsap.timeline({
