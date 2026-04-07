@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import NextImage from 'next/image'
@@ -8,6 +8,8 @@ import NextImage from 'next/image'
 gsap.registerPlugin(ScrollTrigger)
 
 const frameCount = 240
+const CRITICAL_FRAMES = 30 // preload first 30 frames before showing canvas
+
 const currentFrame = (index: number) =>
   `/hero/ezgif-frame-${(index + 1).toString().padStart(3, '0')}.png`
 
@@ -18,52 +20,39 @@ const HeroSection = () => {
   const text2Ref = useRef<HTMLDivElement>(null)
   const text3Ref = useRef<HTMLDivElement>(null)
   const text4Ref = useRef<HTMLDivElement>(null)
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
     const context = canvas?.getContext('2d')
     const container = containerRef.current
-    
+
     if (!canvas || !context || !container) return
 
-    // Preload images
     const images: HTMLImageElement[] = new Array(frameCount)
-    
-    const imageSeq = {
-      frame: 0
-    }
+    const imageSeq = { frame: 0 }
 
     const render = () => {
-      if (images[imageSeq.frame] && images[imageSeq.frame].complete) {
-        context?.clearRect(0, 0, canvas.width, canvas.height)
-        context?.drawImage(images[imageSeq.frame], 0, 0, canvas.width, canvas.height)
+      const img = images[imageSeq.frame]
+      if (img?.complete && img.naturalWidth > 0) {
+        context.clearRect(0, 0, canvas.width, canvas.height)
+        context.drawImage(img, 0, 0, canvas.width, canvas.height)
       }
     }
 
-    const firstImg = new window.Image()
-    firstImg.src = currentFrame(0)
-    images[0] = firstImg
-
-    firstImg.onload = () => {
-      canvas.width = firstImg.width || 1920
-      canvas.height = firstImg.height || 1080
-      render()
-
-      // Deferred loading of remaining 239 images safely
-      setTimeout(() => {
-        for (let i = 1; i < frameCount; i++) {
-            const img = new window.Image()
-            img.src = currentFrame(i)
-            images[i] = img
-            img.onload = () => {
-                if (imageSeq.frame === i) {
-                    render()
-                }
-            }
+    const loadImage = (i: number): Promise<void> =>
+      new Promise(resolve => {
+        const img = new window.Image()
+        img.src = currentFrame(i)
+        images[i] = img
+        img.onload = () => {
+          if (imageSeq.frame === i) render()
+          resolve()
         }
-      }, 100)
+        img.onerror = () => resolve()
+      })
 
-      // Initialize the timeline inside the onload
+    const initTimeline = () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: container,
@@ -86,7 +75,7 @@ const HeroSection = () => {
       const durationOffset = 0.1
       tl.fromTo(text1Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.0)
       tl.to(text1Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.15)
-      
+
       tl.fromTo(text2Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.25)
       tl.to(text2Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.40)
 
@@ -95,6 +84,31 @@ const HeroSection = () => {
 
       tl.fromTo(text4Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.75)
     }
+
+    // Load frame 0 first to set canvas dimensions
+    loadImage(0).then(() => {
+      const firstImg = images[0]
+      canvas.width = firstImg.naturalWidth || 1920
+      canvas.height = firstImg.naturalHeight || 1080
+      render()
+
+      // Load critical frames (1–29) in parallel
+      const criticalBatch = Array.from(
+        { length: CRITICAL_FRAMES - 1 },
+        (_, i) => loadImage(i + 1)
+      )
+
+      Promise.all(criticalBatch).then(() => {
+        // Enough frames ready — reveal canvas and start GSAP
+        setIsReady(true)
+        initTimeline()
+
+        // Load remaining frames quietly in the background
+        for (let i = CRITICAL_FRAMES; i < frameCount; i++) {
+          loadImage(i)
+        }
+      })
+    })
 
     return () => {
       ScrollTrigger.getAll().forEach(trigger => {
@@ -107,15 +121,34 @@ const HeroSection = () => {
 
   return (
     <section ref={containerRef} id="home" className="relative w-full h-screen bg-black overflow-hidden">
-        <NextImage 
-          src={currentFrame(0)} 
-          alt="Blue Moon Background" 
-          fill 
-          priority 
-          unoptimized
-          className="object-cover z-0 opacity-80 pointer-events-none" 
-        />
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover z-0" />
+
+      {/* Loading overlay — fades out once critical frames are ready */}
+      <div
+        className={`absolute inset-0 z-50 bg-black flex flex-col items-center justify-center gap-4 transition-opacity duration-700 ${
+          isReady ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
+        }`}
+      >
+        <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        <p className="text-white/40 text-xs uppercase tracking-[0.3em] font-sans">Loading</p>
+      </div>
+
+      {/* First frame shown immediately while canvas loads */}
+      <NextImage
+        src={currentFrame(0)}
+        alt="Blue Moon Background"
+        fill
+        priority
+        unoptimized
+        className="object-cover z-0 opacity-80 pointer-events-none"
+      />
+
+      {/* Canvas fades in smoothly once ready */}
+      <canvas
+        ref={canvasRef}
+        className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-700 ${
+          isReady ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
         
         <div className="absolute inset-0 pointer-events-none z-10 w-full h-full">
             <div ref={text1Ref} className="absolute opacity-0 flex flex-col items-start top-[15%] left-[5%] md:left-[8%] max-w-2xl text-left">
