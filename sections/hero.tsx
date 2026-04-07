@@ -33,10 +33,6 @@ const HeroSection = () => {
       frame: 0
     }
 
-    const firstImg = new Image()
-    firstImg.src = currentFrame(0)
-    images[0] = firstImg
-
     const render = () => {
       if (images[imageSeq.frame] && images[imageSeq.frame].complete) {
         context?.clearRect(0, 0, canvas.width, canvas.height)
@@ -44,88 +40,84 @@ const HeroSection = () => {
       }
     }
 
+    const firstImg = new window.Image()
+    firstImg.src = currentFrame(0)
+    images[0] = firstImg
+
     firstImg.onload = () => {
       canvas.width = firstImg.width || 1920
       canvas.height = firstImg.height || 1080
       render()
 
-      // Defer loading the remaining 239 images to prevent network blocking for other assets
+      // Deferred loading of remaining 239 images safely
       setTimeout(() => {
         for (let i = 1; i < frameCount; i++) {
-            const img = new Image()
+            const img = new window.Image()
             img.src = currentFrame(i)
             images[i] = img
             img.onload = () => {
-                // Render if user scrolled to this frame while it was loading
                 if (imageSeq.frame === i) {
                     render()
                 }
             }
         }
       }, 100)
+
+      // Initialize the timeline inside the onload
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: container,
+          start: 'top top',
+          end: '+=400%',
+          scrub: 0.5,
+          pin: true,
+          refreshPriority: -1,
+        }
+      })
+
+      tl.to(imageSeq, {
+        frame: frameCount - 1,
+        snap: 'frame',
+        ease: 'none',
+        onUpdate: render,
+        duration: 1
+      }, 0)
+
+      const durationOffset = 0.1
+      tl.fromTo(text1Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.0)
+      tl.to(text1Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.15)
+      
+      tl.fromTo(text2Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.25)
+      tl.to(text2Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.40)
+
+      tl.fromTo(text3Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.50)
+      tl.to(text3Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.65)
+
+      tl.fromTo(text4Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.75)
     }
 
-    
-    // Main animation timeline
-    // This timeline will control both the image sequence and the synchronized text fades
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: container,
-        start: 'top top',
-        end: '+=400%', // Makes the pin duration 4x the viewport height
-        scrub: 0.5,
-        pin: true,
-      }
-    })
-
-    // 1. Image Sequence Animation (span the entire timeline, from 0 to 1)
-    tl.to(imageSeq, {
-      frame: frameCount - 1,
-      snap: 'frame',
-      ease: 'none',
-      onUpdate: render,
-      duration: 1
-    }, 0)
-
-    // 2. Texts sync
-    const durationOffset = 0.1
-    // Intro Text (Feature 1) -> 0.0 to 0.2
-    tl.fromTo(text1Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.0)
-    tl.to(text1Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.15)
-    
-    // Text 2 (Feature 2)
-    tl.fromTo(text2Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.25)
-    tl.to(text2Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.40)
-
-    // Text 3 (Feature 3)
-    tl.fromTo(text3Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.50)
-    tl.to(text3Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.65)
-
-    // Text 4 (Feature 4 - Outro)
-    tl.fromTo(text4Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.75)
-
     return () => {
-      tl.kill()
+      ScrollTrigger.getAll().forEach(trigger => {
+        if (trigger.vars.trigger === container) {
+          trigger.kill()
+        }
+      })
     }
   }, [])
 
   return (
     <section ref={containerRef} id="home" className="relative w-full h-screen bg-black overflow-hidden">
-        {/* Priority loaded LCP image to show immediately before canvas loads */}
         <NextImage 
           src={currentFrame(0)} 
           alt="Blue Moon Background" 
           fill 
           priority 
           unoptimized
-          className="object-cover z-0 opacity-80" 
+          className="object-cover z-0 opacity-80 pointer-events-none" 
         />
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover z-0" />
         
-        {/* Texts container overlayed on top of the canvas */}
         <div className="absolute inset-0 pointer-events-none z-10 w-full h-full">
-            
-            {/* Text 1: Top Left */}
             <div ref={text1Ref} className="absolute opacity-0 flex flex-col items-start top-[15%] left-[5%] md:left-[8%] max-w-2xl text-left">
                 <h1 className="text-5xl md:text-8xl font-sans uppercase tracking-[0.1em] text-white mb-4 text-gradient">
                   Blue Moon
@@ -135,7 +127,6 @@ const HeroSection = () => {
                 </p>
             </div>
             
-            {/* Text 2: Bottom Right */}
             <div ref={text2Ref} className="absolute opacity-0 flex flex-col items-end bottom-[15%] right-[5%] md:right-[8%] max-w-md text-right">
                 <h2 className="text-4xl md:text-5xl font-sans uppercase tracking-[0.1em] text-white mb-4 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
                   Luminous Gravity
@@ -145,7 +136,6 @@ const HeroSection = () => {
                 </p>
             </div>
             
-            {/* Text 3: Top Right */}
             <div ref={text3Ref} className="absolute opacity-0 flex flex-col items-end top-[15%] right-[5%] md:right-[8%] max-w-md text-right">
                 <h2 className="text-4xl md:text-5xl font-sans uppercase tracking-[0.1em] text-white mb-4 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
                   Gritty Noir
@@ -155,7 +145,6 @@ const HeroSection = () => {
                 </p>
             </div>
             
-            {/* Text 4: Bottom Left */}
             <div ref={text4Ref} className="absolute opacity-0 flex flex-col items-start bottom-[15%] left-[5%] md:left-[8%] max-w-md text-left">
                 <h2 className="text-4xl md:text-6xl font-sans uppercase tracking-[0.1em] text-white mb-8 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
                   Own the Night

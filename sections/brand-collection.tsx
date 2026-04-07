@@ -82,6 +82,8 @@ export default function BrandCollection() {
                       src={item.image}
                       alt={item.name}
                       fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      priority={true}
                       className={`object-cover transition-all duration-700`}
                     />
                 </div>
