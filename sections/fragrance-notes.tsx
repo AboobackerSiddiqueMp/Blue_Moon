@@ -8,8 +8,7 @@ const FragranceNotesSection = () => {
   
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start center", "end center"],
-    layoutEffect: false
+    offset: ["start center", "end center"]
   })
 
   // Animate the line height from 0% to 100%
@@ -40,8 +39,9 @@ const FragranceNotesSection = () => {
     <section
       id="fragrance"
       className="relative py-32 px-6 overflow-hidden"
+      suppressHydrationWarning
     >
-      <div className="max-w-4xl mx-auto" ref={containerRef}>
+      <div className="max-w-4xl mx-auto relative" ref={containerRef}>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

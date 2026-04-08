@@ -86,7 +86,7 @@ function BottleStage({ containerRef }: { containerRef: React.RefObject<HTMLDivEl
   }, [])
 
   /* Scroll-linked glow intensity */
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'], layoutEffect: false })
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] })
   const glowOpacity = useSpring(useTransform(scrollYProgress, [0, 0.5, 1], [0.12, 0.28, 0.16]), { stiffness: 60, damping: 20 })
 
   return (
@@ -233,7 +233,7 @@ function ScrollPip({
   slideIndex: number
   total: number
 }) {
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'], layoutEffect: false })
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] })
   const segStart = slideIndex / total
   const segEnd   = (slideIndex + 1) / total
   const w = useSpring(
@@ -259,7 +259,7 @@ function SpecSlide({
   slideIndex: number
   total: number
 }) {
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'], layoutEffect: false })
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] })
 
   const segStart = slideIndex / total
   const segMid   = (slideIndex + 0.5) / total
@@ -355,8 +355,9 @@ const ProductShowcase = () => {
     <div
       ref={containerRef}
       id="product"
-      style={{ height: '140vh' }}
+      style={{ height: '140vh', position: 'relative' }}
       className="relative"
+      suppressHydrationWarning
     >
       {/* Sticky viewport-height panel */}
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-background">
