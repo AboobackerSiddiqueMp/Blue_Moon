@@ -120,6 +120,7 @@ function ExperienceCard({
           start: 'top bottom',
           end: 'bottom top',
           scrub: 1.5,
+          layoutEffect: false,
         },
         y: -60,
         ease: 'none',
@@ -301,6 +302,7 @@ const ExperienceSection = () => {
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start end', 'start 30%'],
+    layoutEffect: false
   })
   const lineWidth = useSpring(useTransform(scrollYProgress, [0, 1], ['0%', '100%']), {
     stiffness: 60,
@@ -318,6 +320,7 @@ const ExperienceSection = () => {
           start: 'top bottom',
           end: 'bottom top',
           scrub: 2,
+          layoutEffect: false,
         },
         y: -80,
         ease: 'none',
