@@ -61,6 +61,7 @@ const HeroSection = () => {
           scrub: 0.5,
           pin: true,
           refreshPriority: -1,
+          layoutEffect: false,
         }
       })
 
@@ -73,16 +74,24 @@ const HeroSection = () => {
       }, 0)
 
       const durationOffset = 0.1
-      tl.fromTo(text1Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.0)
-      tl.to(text1Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.15)
+      if (text1Ref.current) {
+        tl.fromTo(text1Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.0)
+        tl.to(text1Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.15)
+      }
 
-      tl.fromTo(text2Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.25)
-      tl.to(text2Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.40)
+      if (text2Ref.current) {
+        tl.fromTo(text2Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.25)
+        tl.to(text2Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.40)
+      }
 
-      tl.fromTo(text3Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.50)
-      tl.to(text3Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.65)
+      if (text3Ref.current) {
+        tl.fromTo(text3Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.50)
+        tl.to(text3Ref.current, { opacity: 0, y: -30, duration: durationOffset }, 0.65)
+      }
 
-      tl.fromTo(text4Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.75)
+      if (text4Ref.current) {
+        tl.fromTo(text4Ref.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: durationOffset }, 0.75)
+      }
     }
 
     // Load frame 0 first to set canvas dimensions
@@ -101,7 +110,13 @@ const HeroSection = () => {
       Promise.all(criticalBatch).then(() => {
         // Enough frames ready — reveal canvas and start GSAP
         setIsReady(true)
-        initTimeline()
+        
+        // Small delay to ensure all refs are hydrated before initializing ScrollTrigger
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            initTimeline()
+          }, 50)
+        })
 
         // Load remaining frames quietly in the background
         for (let i = CRITICAL_FRAMES; i < frameCount; i++) {
@@ -120,7 +135,7 @@ const HeroSection = () => {
   }, [])
 
   return (
-    <section ref={containerRef} id="home" className="relative w-full h-screen bg-black overflow-hidden">
+    <section ref={containerRef} id="home" className="relative w-full h-screen bg-black overflow-hidden" style={{ position: 'relative' }}>
 
       {/* Loading overlay — fades out once critical frames are ready */}
       <div
